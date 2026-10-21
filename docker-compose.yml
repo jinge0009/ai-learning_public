@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # 服务1：后端 RAG API
+  rag_backend:
+    build: .
+    container_name: rag_backend
+    command: uvicorn day37_rag_api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      # 挂载本地目录，这样数据库和上传的文件不会随容器销毁而丢失
+      - ./chroma_db:/app/chroma_db
+      - ./uploads:/app/uploads
+      - ./local_models:/app/local_models
+      - ./.env:/app/.env
+    environment:
+      - HF_ENDPOINT=https://hf-mirror.com
+
+  # 服务2：前端 Streamlit
+  web_ui:
+    build: .
+    container_name: web_ui
+    command: streamlit run day37_ui_rag_stream.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - rag_backend

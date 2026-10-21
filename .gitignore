@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+uploads/
+.pytest_cache/
+.vscode/
+.DS_Store
+.env
+sample.pdf
+sample.txt
+sample.docx
+chroma_db/
+local_models/
+qa_history.json
+user_profile.json
