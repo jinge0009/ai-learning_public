@@ -4,6 +4,19 @@ import json
 
 st.title("📚 企业知识库流式问答")
 
+# 侧边栏添加文件上传
+with st.sidebar:
+    st.header("📄 知识库管理")
+    uploaded_file = st.file_uploader("上传 PDF 或 TXT", type=["pdf", "txt"])
+    if st.button("上传到知识库") and uploaded_file is not None:
+        with st.spinner("正在解析并存入云端知识库..."):
+            files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
+            res = requests.post("http://rag_backend:8000/upload", files=files)
+            if res.status_code == 200:
+                st.success(f"上传成功！切分块数: {res.json().get('chunks')}")
+            else:
+                st.error(f"上传失败: {res.text}")
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 

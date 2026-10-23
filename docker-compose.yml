@@ -16,6 +16,8 @@ services:
       - ./.env:/app/.env
     environment:
       - HF_ENDPOINT=https://hf-mirror.com
+    networks:
+      - ai_network
 
   # 服务2：前端 Streamlit
   web_ui:
@@ -26,3 +28,9 @@ services:
       - "8501:8501"
     depends_on:
       - rag_backend
+    networks:
+      - ai_network
+
+networks:
+  ai_network:
+    driver:bridge
