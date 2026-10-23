@@ -11,7 +11,7 @@ with st.sidebar:
     if st.button("上传到知识库") and uploaded_file is not None:
         with st.spinner("正在解析并存入云端知识库..."):
             files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-            res = requests.post("http://rag_backend:8000/upload", files=files)
+            res = requests.post("http://124.220.164.171:8000/upload", files=files)
             if res.status_code == 200:
                 st.success(f"上传成功！切分块数: {res.json().get('chunks')}")
             else:
@@ -40,7 +40,7 @@ if prompt := st.chat_input("请输入关于公司制度的问题..."):
 
         def get_rag_stream():
             response = requests.post(
-                "http://rag_backend:8000/chat_stream",
+                "http://124.220.164.171:8000/chat_stream",
                 json={"question": prompt},
                 stream=True
             )
