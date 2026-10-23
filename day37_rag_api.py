@@ -39,7 +39,7 @@ class TencentEmbedding(EmbeddingFunction):
         return [item.embedding for item in response.data]
 
 print("加载 Rerank 模型...")
-model_path = "/app/local_models/models/BAAI--bge-reranker-base/-base/snapshots/master"
+model_path = "/app/local_models/models/BAAI--bge-reranker-base/snapshots/master"
 reranker = CrossEncoder(model_path)
 print(f"加载完成: {model_path}\n")
 
