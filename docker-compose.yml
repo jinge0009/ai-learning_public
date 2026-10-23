@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  # 新增：PostgreSQL 数据库
+  db:
+    image: postgres:15
+    container_name: pg_db
+    environment:
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_password
+      POSTGRES_DB: ai_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ai_network
+
   # 服务1：后端 RAG API
   rag_backend:
     build: .
@@ -9,13 +24,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # 挂载本地目录，这样数据库和上传的文件不会随容器销毁而丢失
       - ./chroma_db:/app/chroma_db
       - ./uploads:/app/uploads
       - ./local_models:/app/local_models
       - ./.env:/app/.env
     environment:
       - HF_ENDPOINT=https://hf-mirror.com
+      - DATABASE_URL=postgresql://ai_user:ai_password@db:5432/ai_db
+    depends_on:
+      - db
     networks:
       - ai_network
 
@@ -33,4 +50,7 @@ services:
 
 networks:
   ai_network:
-    driver:bridge
+    driver: bridge
+
+volumes:
+  pgdata:

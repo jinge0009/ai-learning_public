@@ -4,15 +4,20 @@ from pathlib import Path
 import chromadb
 from chromadb import Documents, EmbeddingFunction, Embeddings
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, status
+from fastapi import FastAPI, UploadFile, File, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from openai import OpenAI
 import traceback
 from sentence_transformers import CrossEncoder
+from sqlalchemy.orm import Session
 
 from day22_load import load_document
 from day23_split import split_text
+
+# ★ 新增数据库相关导入
+from database import engine, get_db
+import models
 
 load_dotenv()
 
@@ -34,15 +39,7 @@ class TencentEmbedding(EmbeddingFunction):
         return [item.embedding for item in response.data]
 
 print("加载 Rerank 模型...")
-base = Path("./local_models/models")
-model_dirs = list(base.glob("BAAI--bge-reranker-base/snapshots/*"))
-if not model_dirs:
-    raise FileNotFoundError(
-        "Rerank 模型未下载。请先运行：\n"
-        "  pip install modelscope\n"
-        "  python download_model.py"
-    )
-model_path = str(model_dirs[0])
+model_path = "/app/local_models/models/BAAI--bge-reranker-base/-base/snapshots/master"
 reranker = CrossEncoder(model_path)
 print(f"加载完成: {model_path}\n")
 
@@ -58,17 +55,10 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt", ".md"}
 HISTORY_FILE = Path("qa_history.json")
 
-# 启动时加载历史
-if HISTORY_FILE.exists():
-    try:
-        qa_history = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        qa_history = []
-else:
-    qa_history = []
+app = FastAPI(title="RAG 知识库 API", version="2.0")
 
-app = FastAPI(title="RAG 知识库 API", version="1.0")
-
+# ★ 启动时自动在数据库中建表
+models.Base.metadata.create_all(bind=engine)
 # ========== 2. Pydantic 模型 ==========
 class ChatRequest(BaseModel):
     question: str
@@ -312,37 +302,55 @@ async def upload_batch(files: list[UploadFile] = File(...)):
     results = [await save_and_index(f) for f in files]
     return {"total": len(results), "results": results}
 
-
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest):
-    """提问，返回 RAG 回答"""
+def chat(req: ChatRequest, db: Session = Depends(get_db)):
+    """提问，返回 RAG 回答并存入数据库"""
     if not req.question.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="问题不能为空"
         )
     result = rag_query(
-    req.question,
-    req.coarse_k,
-    req.fine_k,
-    req.rerank_threshold,
-    req.vector_threshold
-)
-    qa_history.append({"question": req.question, "answer": result["answer"]})
-    save_history()  # 保存历史到文件
+        req.question,
+        req.coarse_k,
+        req.fine_k,
+        req.rerank_threshold,
+        req.vector_threshold
+    )
+    
+    # ★ 存入数据库
+    db_record = models.ChatHistory(
+        user_id="web_user",
+        question=req.question,
+        answer=result["answer"]
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    
     return result
 
 @app.get("/history")
-def get_history():
-    """查询历史"""
-    return {"total": len(qa_history), "history": qa_history[-10:]}
+def get_history(db: Session = Depends(get_db)):
+    """查询最近10条历史"""
+    records = db.query(models.ChatHistory).order_by(models.ChatHistory.created_at.desc()).limit(10).all()
+    
+    history_list = [
+        {
+            "question": r.question, 
+            "answer": r.answer, 
+            "time": r.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        } 
+        for r in records
+    ]
+    return {"total": len(history_list), "history": history_list}
 
 @app.delete("/history")
-def clear_history():
-    """删除历史"""
-    qa_history.clear()
-    save_history()
-    return {"message": "历史已清空"}
+def clear_history(db: Session = Depends(get_db)):
+    """清空历史"""
+    db.query(models.ChatHistory).delete()
+    db.commit()
+    return {"message": "历史记录已从数据库清空"}
 
 @app.get("/documents")
 def list_documents():
