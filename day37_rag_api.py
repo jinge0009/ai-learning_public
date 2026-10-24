@@ -167,7 +167,7 @@ def rag_query(question: str, coarse_k: int = 20, fine_k: int = 3, rerank_thresho
         ]
     return {"answer": answer, "sources": sources}
 
-async def rag_stream_generator(question: str, coarse_k: int = 20, fine_k: int = 3, rerank_threshold: float = 0.5, vector_threshold: float = 0.3):
+async def rag_stream_generator(question: str, db: Session, coarse_k: int = 20, fine_k: int = 3, rerank_threshold: float = 0.5, vector_threshold: float = 0.3):
     """RAG 流式生成器"""
     # 1. 检索阶段（和原来一样）
     results = collection.query(query_texts=[question], n_results=coarse_k)
