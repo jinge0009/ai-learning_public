@@ -16,4 +16,4 @@ EXPOSE 8000
 EXPOSE 8501
 
 # 默认命令（会被 docker-compose 覆盖）
-CMD ["uvicorn", "day28_rag_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "day37_rag_api:app", "--host", "0.0.0.0", "--port", "8000"]
