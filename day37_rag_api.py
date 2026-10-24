@@ -212,6 +212,7 @@ async def rag_stream_generator(question: str, coarse_k: int = 20, fine_k: int = 
 3. 回答简洁明了"""
 
     # 2. 生成阶段（开启 stream=True）
+    full_answer = "" # ★ 新增：用来收集完整的回答
     try:
         response = client_ai.chat.completions.create(
             model="deepseek/deepseek-flash",
@@ -222,10 +223,19 @@ async def rag_stream_generator(question: str, coarse_k: int = 20, fine_k: int = 
         for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
                 text = chunk.choices[0].delta.content
+                full_answer += text  # ★ 把碎片拼起来
                 # 将每个 chunk 封装成 SSE 格式发给前端
                 yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
 
-        # 3. 在流式结束的最后，把来源信息发给前端
+        # 3. 在流式结束的最后，存入数据库，把来源信息发给前端
+        db_record = models.ChatHistory(
+            user_id="web_user",
+            question=question,
+            answer=full_answer
+        )
+        db.add(db_record)
+        db.commit()
+
         sources = [
             {
                 "source": meta.get("source"),
@@ -377,7 +387,7 @@ def delete_document(name: str):
         file_path.unlink()
 
 @app.post("/chat_stream")
-async def chat_stream(req: ChatRequest):
+async def chat_stream(req: ChatRequest, db: Session = Depends(get_db)): # ★
     """流式 RAG 问答接口"""
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="问题不能为空")
@@ -385,6 +395,7 @@ async def chat_stream(req: ChatRequest):
     return StreamingResponse(
         rag_stream_generator(
             req.question, 
+            db,  # ★ 把 db 传给生成器
             req.coarse_k, 
             req.fine_k, 
             req.rerank_threshold, 
