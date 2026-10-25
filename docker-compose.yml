@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 新增：PostgreSQL 数据库
+  # 1. 数据库
   db:
     image: postgres:15
     container_name: pg_db
@@ -16,13 +16,14 @@ services:
     networks:
       - ai_network
 
-  # 服务1：后端 RAG API
+  # 2. 后端
   rag_backend:
     build: .
     container_name: rag_backend
     command: uvicorn day37_rag_api:app --host 0.0.0.0 --port 8000
-    ports:
-      - "8000:8000"
+    # 注意：这里不再需要向外暴露 8000 端口了，因为前端通过 Nginx 内部转发
+    expose:
+      - "8000"
     volumes:
       - ./chroma_db:/app/chroma_db
       - ./uploads:/app/uploads
@@ -36,13 +37,12 @@ services:
     networks:
       - ai_network
 
-  # 服务2：前端 Streamlit
+  # 3. 前端 (升级为 Nginx 容器)
   web_ui:
-    build: .
+    build: ./ai-frontend  # ★ 指向前端目录
     container_name: web_ui
-    command: streamlit run day37_ui_rag_stream.py --server.port 8501 --server.address 0.0.0.0
     ports:
-      - "8501:8501"
+      - "80:80"            # ★ 将外网的 80 端口映射到容器的 80
     depends_on:
       - rag_backend
     networks:
