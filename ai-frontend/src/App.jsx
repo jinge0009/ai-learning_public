@@ -138,13 +138,18 @@ function App() {
                 : 'bg-white text-gray-800 shadow-sm rounded-tl-none'
             }`}>
               <div className="prose prose-sm max-w-none">
-                <Markdown>{msg.content}</Markdown>
+                {msg.content ? (
+                  <Markdown>{msg.content}</Markdown>
+                ) : (
+                  isLoading && index === messages.length - 1 && (
+                    <div className="flex space-x-1 items-center h-6">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  )
+                )}
               </div>
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </main>
 
       {/* 底部输入区 */}
       <footer className="bg-white p-4 shadow-md">

@@ -32,8 +32,10 @@ services:
     environment:
       - HF_ENDPOINT=https://hf-mirror.com
       - DATABASE_URL=postgresql://ai_user:ai_password@db:5432/ai_db
+      - REDIS_URL=redis://redis:6379/0  # ★ 新增这行
     depends_on:
       - db
+      - redis                           # ★ 依赖加上 redis
     networks:
       - ai_network
 
@@ -45,6 +47,15 @@ services:
       - "80:80"            # ★ 将外网的 80 端口映射到容器的 80
     depends_on:
       - rag_backend
+    networks:
+      - ai_network
+
+  # 4. 新增：Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ai_redis
+    ports:
+      - "6379:6379"
     networks:
       - ai_network
 
