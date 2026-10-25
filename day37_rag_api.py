@@ -6,6 +6,7 @@ from chromadb import Documents, EmbeddingFunction, Embeddings
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 import traceback
@@ -56,6 +57,15 @@ ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt", ".md"}
 HISTORY_FILE = Path("qa_history.json")
 
 app = FastAPI(title="RAG 知识库 API", version="2.0")
+
+# ★ 允许所有跨域请求（开发测试用）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # 上线时可改成前端域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ★ 启动时自动在数据库中建表
 models.Base.metadata.create_all(bind=engine)
