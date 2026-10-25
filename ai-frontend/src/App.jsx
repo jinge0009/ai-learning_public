@@ -28,7 +28,7 @@ function App() {
     setMessages([...newMessages, { role: 'assistant', content: '' }])
 
     try {
-      const response = await fetch('http://124.220.164.171:8000/chat_stream', {
+      const response = await fetch('/api/chat_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: question })
@@ -83,7 +83,7 @@ function App() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://124.220.164.171:8000/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
