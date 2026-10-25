@@ -12,3 +12,4 @@ streamlit
 sqlalchemy
 psycopg[binary]
 python-multipart
+redis
