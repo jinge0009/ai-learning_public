@@ -109,7 +109,7 @@ function App() {
     <div className="flex h-screen bg-gray-50 overflow-hidden relative">
       
       {/* 侧边栏：文档管理 */}
-      <div className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform transition-transform duration-300 z-50 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 left-0 w-64 max-w-[80vw] bg-white shadow-xl transform transition-transform duration-300 z-50 ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="font-bold text-gray-700">文档管理</h2>
           <button onClick={() => setShowSidebar(false)} className="text-gray-500 hover:text-red-500 font-bold">✕</button>
@@ -129,7 +129,7 @@ function App() {
       </div>
 
       {/* 遮罩层 */}
-      {showSidebar && <div onClick={() => setShowSidebar(false)} className="fixed inset-0 bg-black bg-opacity-20 z-40"></div>}
+      {showSidebar && <div onClick={() => setShowSidebar(false)} className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"></div>}
 
       {/* 主聊天区 */}
       <div className="flex flex-col flex-1 h-full">

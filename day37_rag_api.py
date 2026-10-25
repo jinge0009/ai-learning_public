@@ -248,3 +248,13 @@ def delete_document(name: str):
     file_path = UPLOAD_DIR / name
     if file_path.exists():
         file_path.unlink()
+
+@app.get("/documents")
+def list_documents():
+    """查询所有已上传的文档列表"""
+    results = collection.get()
+    sources = {meta.get("source") for meta in results["metadatas"] if meta.get("source")}
+    return {
+        "total_chunks": collection.count(),
+        "documents": sorted(sources)
+    }
