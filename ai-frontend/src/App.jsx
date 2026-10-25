@@ -10,12 +10,10 @@ function App() {
   const [isUploading, setIsUploading] = useState(false)
   const messagesEndRef = useRef(null)
 
-  // 自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // 发送消息
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
     
@@ -25,13 +23,20 @@ function App() {
     setInput('')
     setIsLoading(true)
 
+    // 准备空气泡占位
     setMessages([...newMessages, { role: 'assistant', content: '' }])
+
+    // 获取最近 5 条历史
+    const history = messages.slice(-5).map(msg => ({ role: msg.role, content: msg.content }))
 
     try {
       const response = await fetch('/api/chat_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question })
+        body: JSON.stringify({ 
+          question: question,
+          history: history
+        })
       })
 
       if (!response.ok) throw new Error('Network response was not ok')
@@ -73,7 +78,6 @@ function App() {
     }
   }
 
-  // 上传文件
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -92,20 +96,19 @@ function App() {
         const data = await response.json()
         alert(`上传成功！文件切分了 ${data.chunks} 块。`)
       } else {
-        alert('上传失败，请检查文件格式或后端服务。')
+        alert('上传失败，请检查文件格式。')
       }
     } catch (error) {
       console.error('上传出错:', error)
       alert('上传网络错误！')
     } finally {
       setIsUploading(false)
-      e.target.value = null // 允许重复上传同一个文件
+      e.target.value = null
     }
   }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* 顶部栏 */}
       <header className="bg-white shadow-sm p-4 flex justify-between items-center">
         <div className="w-24"></div>
         <h1 className="text-xl font-bold text-gray-700">🤖 商业级 AI 助手</h1>
@@ -128,7 +131,6 @@ function App() {
         </div>
       </header>
       
-      {/* 聊天区 */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, index) => (
           <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -150,8 +152,12 @@ function App() {
                   )
                 )}
               </div>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </main>
 
-      {/* 底部输入区 */}
       <footer className="bg-white p-4 shadow-md">
         <div className="max-w-4xl mx-auto flex gap-2">
           <input
