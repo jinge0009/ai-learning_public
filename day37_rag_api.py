@@ -172,11 +172,17 @@ async def rag_stream_generator(question: str, history: list, db: Session, cache_
         redis_client.setex(cache_key, 86400, full_answer)
 
         sources = [
-            {"source": meta.get("source"), "index": meta.get("index"), "rerank_score": round(float(score), 4)}
+            {
+                "source": meta.get("source"),
+                "index": meta.get("index"),
+                "rerank_score": round(float(score), 4),
+                "content": doc[:200] # ★ 新增：把匹配到的原文前 200 个字符发给前端
+            }
             for doc, dist, meta, score in filtered
         ]
+        # 用特殊的 type 标记这是来源数据，而不是普通文本
         yield f"data: {json.dumps({'type': 'sources', 'sources': sources}, ensure_ascii=False)}\n\n"
-
+   
     except Exception as e:
         yield f"data: {json.dumps({'text': f'生成出错: {e}'}, ensure_ascii=False)}\n\n"
 
